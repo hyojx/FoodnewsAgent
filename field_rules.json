@@ -1,0 +1,393 @@
+{
+  "version": "1.0.0",
+  "categories": {
+    "해외 동향": {
+      "completion_thresholds": {
+        "completed": 0.85,
+        "partial_completed": 0.6
+      },
+      "fields": [
+        {
+          "field_path": "category",
+          "required": true,
+          "type": "string",
+          "must_have_sources": false,
+          "weight": 1.0
+        },
+        {
+          "field_path": "topic",
+          "required": true,
+          "type": "string",
+          "must_have_sources": false,
+          "weight": 1.0
+        },
+        {
+          "field_path": "researched_at",
+          "required": true,
+          "type": "datetime",
+          "must_have_sources": false,
+          "weight": 1.0
+        },
+        {
+          "field_path": "sources_master",
+          "required": true,
+          "type": "array",
+          "min_items": 1,
+          "must_have_sources": false,
+          "weight": 1.5
+        },
+        {
+          "field_path": "trend_name",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.5
+        },
+        {
+          "field_path": "definition",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.5
+        },
+        {
+          "field_path": "change_from_previous",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.5
+        },
+        {
+          "field_path": "background",
+          "required": true,
+          "type": "array_of_value_with_sources",
+          "min_items": 1,
+          "must_have_sources": true,
+          "weight": 1.25
+        },
+        {
+          "field_path": "core_change_structure.product_change",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.25
+        },
+        {
+          "field_path": "core_change_structure.consumption_change",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.25
+        },
+        {
+          "field_path": "cases",
+          "required": true,
+          "type": "array",
+          "min_items": 2,
+          "must_have_sources": true,
+          "weight": 2.0
+        },
+        {
+          "field_path": "cases[].company",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.0
+        },
+        {
+          "field_path": "cases[].product_or_service",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.0
+        },
+        {
+          "field_path": "cases[].how_it_works",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.0
+        },
+        {
+          "field_path": "cases[].features",
+          "required": true,
+          "type": "array_of_value_with_sources",
+          "min_items": 1,
+          "must_have_sources": true,
+          "weight": 1.0
+        },
+        {
+          "field_path": "expansion_pattern.geographic_scope",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.25
+        },
+        {
+          "field_path": "expansion_pattern.industry_expansion",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.25
+        }
+      ]
+    },
+    "상품·서비스": {
+      "completion_thresholds": {
+        "completed": 0.85,
+        "partial_completed": 0.6
+      },
+      "fields": [
+        {
+          "field_path": "category",
+          "required": true,
+          "type": "string",
+          "must_have_sources": false,
+          "weight": 1.0
+        },
+        {
+          "field_path": "topic",
+          "required": true,
+          "type": "string",
+          "must_have_sources": false,
+          "weight": 1.0
+        },
+        {
+          "field_path": "researched_at",
+          "required": true,
+          "type": "datetime",
+          "must_have_sources": false,
+          "weight": 1.0
+        },
+        {
+          "field_path": "sources_master",
+          "required": true,
+          "type": "array",
+          "min_items": 1,
+          "must_have_sources": false,
+          "weight": 1.5
+        },
+        {
+          "field_path": "name",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.5
+        },
+        {
+          "field_path": "summary",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.5
+        },
+        {
+          "field_path": "developer.company_name",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.25
+        },
+        {
+          "field_path": "developer.company_description",
+          "required": false,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 0.75
+        },
+        {
+          "field_path": "purpose",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.25
+        },
+        {
+          "field_path": "key_features",
+          "required": true,
+          "type": "array_of_value_with_sources",
+          "min_items": 2,
+          "must_have_sources": true,
+          "weight": 1.5
+        },
+        {
+          "field_path": "how_it_works",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.5
+        },
+        {
+          "field_path": "data_or_technology_basis",
+          "required": true,
+          "type": "array_of_value_with_sources",
+          "min_items": 1,
+          "must_have_sources": true,
+          "weight": 1.25
+        },
+        {
+          "field_path": "business_model.pricing",
+          "required": false,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.0,
+          "allow_literal_values": [
+            "비공개"
+          ]
+        },
+        {
+          "field_path": "business_model.model",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.25
+        },
+        {
+          "field_path": "use_effects",
+          "required": true,
+          "type": "array_of_value_with_sources",
+          "min_items": 1,
+          "must_have_sources": true,
+          "weight": 1.25
+        },
+        {
+          "field_path": "differentiation",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.25
+        }
+      ]
+    },
+    "푸드테크": {
+      "completion_thresholds": {
+        "completed": 0.85,
+        "partial_completed": 0.6
+      },
+      "fields": [
+        {
+          "field_path": "category",
+          "required": true,
+          "type": "string",
+          "must_have_sources": false,
+          "weight": 1.0
+        },
+        {
+          "field_path": "topic",
+          "required": true,
+          "type": "string",
+          "must_have_sources": false,
+          "weight": 1.0
+        },
+        {
+          "field_path": "researched_at",
+          "required": true,
+          "type": "datetime",
+          "must_have_sources": false,
+          "weight": 1.0
+        },
+        {
+          "field_path": "sources_master",
+          "required": true,
+          "type": "array",
+          "min_items": 1,
+          "must_have_sources": false,
+          "weight": 1.5
+        },
+        {
+          "field_path": "technology_name",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.5
+        },
+        {
+          "field_path": "summary",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.25
+        },
+        {
+          "field_path": "technology_principle",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.5
+        },
+        {
+          "field_path": "problem_with_existing_method",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.25
+        },
+        {
+          "field_path": "solution",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.25
+        },
+        {
+          "field_path": "applications",
+          "required": true,
+          "type": "array",
+          "min_items": 1,
+          "must_have_sources": true,
+          "weight": 1.5
+        },
+        {
+          "field_path": "applications[].company",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.0
+        },
+        {
+          "field_path": "applications[].application_form",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.0
+        },
+        {
+          "field_path": "results_and_effects",
+          "required": true,
+          "type": "array_of_value_with_sources",
+          "min_items": 1,
+          "must_have_sources": true,
+          "weight": 1.25
+        },
+        {
+          "field_path": "use_cases",
+          "required": true,
+          "type": "array_of_value_with_sources",
+          "min_items": 1,
+          "must_have_sources": true,
+          "weight": 1.25
+        },
+        {
+          "field_path": "industry_meaning",
+          "required": true,
+          "type": "value_with_sources",
+          "must_have_sources": true,
+          "weight": 1.5
+        }
+      ]
+    }
+  },
+  "global_rules": {
+    "value_field_empty_values": [
+      "",
+      null
+    ],
+    "default_max_iterations": 3,
+    "default_min_completion_rate": 0.95,
+    "min_sources_required": 3,
+    "partial_completion_rate_floor": 0.6,
+    "notes_do_not_affect_completion_rate": true,
+    "all_non_empty_values_must_reference_sources_master": true,
+    "source_id_pattern": "^S[1-9][0-9]*$"
+  }
+}

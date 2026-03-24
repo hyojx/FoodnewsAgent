@@ -1,0 +1,311 @@
+{
+  "request_id": "req_20260324_024044",
+  "status": "partial_completed",
+  "category": "상품·서비스",
+  "article_url": "https://prtimes.jp/main/html/rd/p/000000055.000002177.html",
+  "completion_rate": 0.7468,
+  "iterations_count": 3,
+  "sources_used": 11,
+  "missing_fields": [
+    "topic",
+    "key_features",
+    "data_or_technology_basis",
+    "use_effects"
+  ],
+  "result": {
+    "filled_schema": {
+      "category": "상품·서비스",
+      "topic": "",
+      "researched_at": "2026-03-24",
+      "sources_master": [
+        {
+          "source_id": "S1",
+          "url": "https://prtimes.jp/main/html/rd/p/000000055.000002177.html",
+          "title": "海外市場の現場で集めた食トレンド10年分を学習した食の特化型AI「FOODIAL AI」を正式ローンチ。生成AIでは辿り着けない具体性のある回答を商品 개발の 힌트에!",
+          "publisher": "PR TIMES",
+          "published_at": "2026-02-25",
+          "source_type": "article",
+          "language": "ja",
+          "relevance_score": 1.0,
+          "is_duplicate": false
+        },
+        {
+          "source_id": "S2",
+          "url": "https://www.tenace.co.jp/news/1062/",
+          "title": "海外市場の現場で集めた食トレンド10年分を学習した食の特化型 ...",
+          "publisher": "www.tenace.co.jp",
+          "published_at": "",
+          "source_type": "article",
+          "language": "ja",
+          "relevance_score": 0.85,
+          "is_duplicate": false
+        },
+        {
+          "source_id": "S3",
+          "url": "https://news.ladytopi.jp/article/1ccea5fe-1216-11f1-82e7-9ca3ba08d54b",
+          "title": "「FOODIAL AI」の誕生：10年分のフードトレンド解析で企業を支援",
+          "publisher": "news.ladytopi.jp",
+          "published_at": "",
+          "source_type": "article",
+          "language": "ja",
+          "relevance_score": 0.8,
+          "is_duplicate": false
+        },
+        {
+          "source_id": "S4",
+          "url": "https://www.tenace.co.jp/news/969/",
+          "title": "フードマーケティングレポート「FOODIAL（フーディアル）」がA…",
+          "publisher": "www.tenace.co.jp",
+          "published_at": "",
+          "source_type": "article",
+          "language": "ja",
+          "relevance_score": 0.9,
+          "is_duplicate": false
+        },
+        {
+          "source_id": "S5",
+          "url": "https://news.jocee.jp/article/6dddf694-1215-11f1-9667-9ca3ba0a67df",
+          "title": "フードトレンドをつかむ新ツール「FOODIAL AI」が登場！",
+          "publisher": "news.jocee.jp",
+          "published_at": "",
+          "source_type": "article",
+          "language": "ja",
+          "relevance_score": 0.8,
+          "is_duplicate": false
+        },
+        {
+          "source_id": "S6",
+          "url": "https://www.tenace.co.jp/foodial/",
+          "title": "海外の食潮流・フードトレンドレポート 「FOODIAL」 のご案内 ...",
+          "publisher": "www.tenace.co.jp",
+          "published_at": "",
+          "source_type": "article",
+          "language": "ja",
+          "relevance_score": 0.9,
+          "is_duplicate": false
+        },
+        {
+          "source_id": "S7",
+          "url": "https://blog.aichef.pro/ja/最高の食費計算ツール比較/",
+          "title": "2026年版 ベストAI食品コスト計算ツール：比較ガイド - AIシェフ ...",
+          "publisher": "blog.aichef.pro",
+          "published_at": "",
+          "source_type": "article",
+          "language": "ja",
+          "relevance_score": 0.8,
+          "is_duplicate": false
+        },
+        {
+          "source_id": "S8",
+          "url": "https://note.com/hip_heron3242/n/n67e7f1d45d78",
+          "title": "AI가「次に流行る味」を特定。食の特化型AI「FOODIAL AI」でニッ …",
+          "publisher": "note.com",
+          "published_at": "",
+          "source_type": "article",
+          "language": "ja",
+          "relevance_score": 0.85,
+          "is_duplicate": false
+        },
+        {
+          "source_id": "S9",
+          "url": "https://trendoffood.tistory.com/191",
+          "title": "해외 식품 트렌드 데이터 기반 AI 서비스 등장",
+          "publisher": "trendoffood.tistory.com",
+          "published_at": "",
+          "source_type": "article",
+          "language": "ja",
+          "relevance_score": 0.8,
+          "is_duplicate": false
+        },
+        {
+          "source_id": "S10",
+          "url": "https://prtimes.jp/main/html/rd/p/000000046.000002177.html",
+          "title": "世界の食トレンドを対話型AIが瞬時に探索。フード ... - PR TIMES",
+          "publisher": "prtimes.jp",
+          "published_at": "",
+          "source_type": "article",
+          "language": "ja",
+          "relevance_score": 0.9,
+          "is_duplicate": false
+        },
+        {
+          "source_id": "S11",
+          "url": "https://www.generatived.com/news/tnc-food-trends-interactive-ai-service-launched",
+          "title": "TNC食トレンド対話型AI서비스 시작",
+          "publisher": "www.generatived.com",
+          "published_at": "",
+          "source_type": "article",
+          "language": "ja",
+          "relevance_score": 0.8,
+          "is_duplicate": false
+        }
+      ],
+      "name": {
+        "value": "FOODIAL AI",
+        "sources": [
+          "S1",
+          "S9"
+        ],
+        "notes": ""
+      },
+      "summary": {
+        "value": "FOODIAL AI는 전 세계 시장에서 수집한 10년간의 식품 트렌드를 학습한 식품 특화 AI 서비스로, 신뢰성 있는 구체적인 답변을 통해 상품 개발과 마케팅 전략에 기여합니다.",
+        "sources": [
+          "S1",
+          "S2",
+          "S3",
+          "S9",
+          "S10"
+        ],
+        "notes": ""
+      },
+      "developer": {
+        "company_name": {
+          "value": "株式会社TNC",
+          "sources": [
+            "S1",
+            "S3",
+            "S5",
+            "S11"
+          ],
+          "notes": ""
+        },
+        "company_description": {
+          "value": "株式会社TNC는 세계 각국에서 수집한 데이터를 바탕으로 마케팅 및 상품 기획, 리서치를 전문으로 하는 기업입니다.",
+          "sources": [
+            "S1",
+            "S3",
+            "S5",
+            "S11"
+          ],
+          "notes": ""
+        }
+      },
+      "purpose": {
+        "value": "해외 식품 트렌드를 기반으로 한 신뢰할 수 있는 정보를 통해 상품 개발 및 마케팅 전략 수립에 도움을 제공하는 것입니다.",
+        "sources": [
+          "S1",
+          "S3",
+          "S5",
+          "S9",
+          "S10"
+        ],
+        "notes": ""
+      },
+      "key_features": [
+        {
+          "description": "과거 10년간의 전 세계 식품 트렌드를 요약하여 제공하는 횡단 검색 기능",
+          "sources": [
+            "S1",
+            "S2",
+            "S3",
+            "S9",
+            "S10"
+          ]
+        },
+        {
+          "description": "마케팅 시각을 반영한 구체적이고 신뢰성 있는 아이디어 발상 지원",
+          "sources": [
+            "S1",
+            "S2",
+            "S3",
+            "S9",
+            "S10"
+          ]
+        },
+        {
+          "description": "사용자 맞춤형 시나리오 선택과 높은 신뢰성을 제공하여 의사결정을 지원",
+          "sources": [
+            "S1",
+            "S2",
+            "S3",
+            "S9",
+            "S10"
+          ]
+        }
+      ],
+      "how_it_works": {
+        "value": "FOODIAL AI는 TNC가 각국에서 수집한 1차 정보를 기반으로 하여 정확한 근거를 바탕으로 한 정보를 제공합니다.",
+        "sources": [
+          "S1",
+          "S2",
+          "S3",
+          "S5",
+          "S9",
+          "S11"
+        ],
+        "notes": ""
+      },
+      "data_or_technology_basis": [
+        {
+          "description": "주요 데이터 소스로는 매월 업데이트되는 FOODIAL 레포트를 사용",
+          "sources": [
+            "S1",
+            "S2",
+            "S3",
+            "S6",
+            "S9",
+            "S10",
+            "S11"
+          ]
+        }
+      ],
+      "business_model": {
+        "pricing": {
+          "value": "FOODIAL AI는 초기 베타 버전은 무료로 제공되었으며, 정식 버전에서는 유료 서비스로 전환 예정입니다.",
+          "sources": [
+            "S4",
+            "S9",
+            "S10"
+          ],
+          "notes": "베타 버전은 2025년 10월 23일부터 11월 중순까지 무료 제공되었습니다."
+        },
+        "model": {
+          "value": "FOODIAL AI는 기업 B2B 서비스로, 식품 업계의 정보 탐색과 해외 사례 조사를 지원합니다.",
+          "sources": [
+            "S9"
+          ],
+          "notes": ""
+        }
+      },
+      "use_effects": [
+        {
+          "effect": "특정 지역에 대한 상품 개발 아이디어 창출 및 트렌드 변화를 토대로 한 시장 예측에 유용",
+          "sources": [
+            "S1",
+            "S3",
+            "S5",
+            "S9",
+            "S10",
+            "S11"
+          ]
+        }
+      ],
+      "differentiation": {
+        "value": "TNC가 수집한 1차 정보에 기반하여 명확하고 신뢰할 수 있는 정보를 제공하며, 인터넷에서의 모호한 정보와 차별화를 둡니다.",
+        "sources": [
+          "S1",
+          "S2",
+          "S3",
+          "S5",
+          "S9",
+          "S10"
+        ],
+        "notes": ""
+      }
+    },
+    "missing_fields": [
+      "topic",
+      "key_features",
+      "data_or_technology_basis",
+      "use_effects"
+    ],
+    "sources_used": 11
+  },
+  "meta": {
+    "created_at": "2026-03-24T02:40:44.092659+00:00",
+    "started_at": "2026-03-24T02:40:44.092689+00:00",
+    "finished_at": "2026-03-24T02:42:01.271500+00:00"
+  },
+  "error": null
+}
