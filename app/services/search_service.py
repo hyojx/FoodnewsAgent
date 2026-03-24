@@ -40,9 +40,9 @@ class SearchService:
         return self._execute_search(query, limit)
 
     def search_for_field(
-        self, field_path: str, topic: str, category: str, limit: int = 3
+        self, field_path: str, topic: str, category: str, article_title: str = "", limit: int = 3
     ) -> List[SearchResult]:
-        queries = self._generate_queries(field_path, topic, category)
+        queries = self._generate_queries(field_path, topic, category, article_title)
         results = []
         seen_urls = set()
         for q in queries[:2]:
@@ -52,26 +52,29 @@ class SearchService:
                     results.append(r)
         return results[:limit]
 
-    def _generate_queries(self, field_path: str, topic: str, category: str) -> List[str]:
+    def _generate_queries(self, field_path: str, topic: str, category: str, article_title: str = "") -> List[str]:
+        # Use article title as anchor when available (more specific than topic alone)
+        anchor = article_title.strip() if article_title.strip() else topic
+
         query_templates = {
-            "cases": [f"{topic} 事例 ブランド", f"{topic} 企業 活用事例"],
-            "trend_name": [f"{topic} トレンド 定義"],
-            "definition": [f"{topic} とは 意味 定義"],
-            "change_from_previous": [f"{topic} 変化 従来比較"],
-            "background": [f"{topic} 背景 歴史"],
-            "expansion_pattern.geographic_scope": [f"{topic} グローバル展開 地域"],
-            "expansion_pattern.industry_expansion": [f"{topic} 業界 拡大"],
-            "key_features": [f"{topic} 特徴 機能"],
-            "how_it_works": [f"{topic} 仕組み 方法"],
-            "business_model.pricing": [f"{topic} 価格 料金"],
-            "business_model.model": [f"{topic} ビジネスモデル 収益"],
-            "technology_principle": [f"{topic} 技術 原理 仕組み"],
-            "applications": [f"{topic} 応用 活用 企業"],
-            "results_and_effects": [f"{topic} 効果 結果 実績"],
-            "industry_meaning": [f"{topic} 業界 意義 影響"],
+            "cases": [f"{anchor} 事例 ブランド", f"{anchor} 企業 活用事例"],
+            "trend_name": [f"{anchor} トレンド 定義"],
+            "definition": [f"{anchor} とは 意味 定義"],
+            "change_from_previous": [f"{anchor} 変化 従来比較"],
+            "background": [f"{anchor} 背景 歴史"],
+            "expansion_pattern.geographic_scope": [f"{anchor} グローバル展開 地域"],
+            "expansion_pattern.industry_expansion": [f"{anchor} 業界 拡大"],
+            "key_features": [f"{anchor} 特徴 機能"],
+            "how_it_works": [f"{anchor} 仕組み 方法"],
+            "business_model.pricing": [f"{anchor} 価格 料金"],
+            "business_model.model": [f"{anchor} ビジネスモデル 収益"],
+            "technology_principle": [f"{anchor} 技術 原理 仕組み"],
+            "applications": [f"{anchor} 応用 活用 企業"],
+            "results_and_effects": [f"{anchor} 効果 結果 実績"],
+            "industry_meaning": [f"{anchor} 業界 意義 影響"],
         }
         base = field_path.split("[")[0]
-        return query_templates.get(base, [f"{topic} {field_path.replace('.', ' ')}"])
+        return query_templates.get(base, [f"{anchor} {field_path.replace('.', ' ')}"])
 
     def _execute_search(self, query: str, limit: int) -> List[SearchResult]:
         results = []

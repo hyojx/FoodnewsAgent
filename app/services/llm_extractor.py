@@ -280,6 +280,8 @@ Article title: {article_title}
 Missing fields: {json.dumps(missing_fields[:8], ensure_ascii=False)}
 
 Generate up to {limit_per_field} targeted search queries per missing field.
+IMPORTANT: Each query MUST include the article title or topic keyword as anchor — do NOT generate generic queries without it.
+For example, if article title is "FOODIAL AI", queries must contain "FOODIAL AI" (not just "AI 食品 検索").
 Focus on factual, specific queries. Use Japanese for Japanese topics.
 Return a flat JSON array of query strings."""
 

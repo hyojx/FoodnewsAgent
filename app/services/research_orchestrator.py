@@ -183,6 +183,6 @@ class ResearchOrchestrator:
         # Fallback: rule-based queries per missing field
         queries = []
         for field_path in missing_fields[:5]:
-            results = self.search_service._generate_queries(field_path, topic, job.category)
+            results = self.search_service._generate_queries(field_path, topic, job.category, article.title)
             queries.extend(results[:2])
         return queries
