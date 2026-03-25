@@ -233,7 +233,48 @@
 
 ---
 
-### 3) 카테고리별 기본 스키마 조회
+### 3) 추가 리서치 요청
+
+`POST /v1/research/additional`
+
+역할:
+
+* 완료된 조사 결과에 자연어 요청으로 특정 정보를 추가 검색·보강
+* `request_id` 또는 `filled_schema` 직접 전달 중 택일
+* 기존 `sources_master[0].language`를 기준으로 검색 언어 자동 선택
+
+요청 예시 (request_id 방식):
+
+```json
+{
+  "request_id": "req_a1b2c3d4e5f6",
+  "additional_query": "이 제품의 가격 정보와 경쟁사 비교가 필요해"
+}
+```
+
+요청 예시 (filled_schema 방식):
+
+```json
+{
+  "article_url": "https://example.com/article",
+  "category": "상품·서비스",
+  "additional_query": "북미 시장 진출 현황과 파트너사 정보 추가해줘",
+  "filled_schema": { "...": "기존 조사 결과 JSON" }
+}
+```
+
+응답 예시:
+
+```json
+{
+  "request_id": "req_xyz789",
+  "status": "queued"
+}
+```
+
+---
+
+### 4) 카테고리별 기본 스키마 조회
 
 `GET /v1/schemas/{category}`
 
@@ -243,7 +284,7 @@
 
 ---
 
-### 4) 지원 카테고리 목록 조회
+### 5) 지원 카테고리 목록 조회
 
 `GET /v1/categories`
 
@@ -261,7 +302,7 @@
 
 ---
 
-### 5) 헬스체크
+### 6) 헬스체크
 
 `GET /health`
 
@@ -738,6 +779,12 @@ erDiagram
 * 중복 제거 고도화
 * source 충돌 해결 규칙 적용
 * 운영용 에러코드/로그 정교화
+
+## v5
+
+* `POST /v1/research/additional` — 추가 리서치 엔드포인트
+* 다국어 검색 지원 (영어·일본어·한국어·중국어 기사)
+* 자연어 추가 요청 → LLM 검색 쿼리 변환 (기사 언어 기준)
 
 ### MVP 제외
 

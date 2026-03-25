@@ -99,13 +99,13 @@ class ResearchOrchestrator:
 
             # Generate search queries for missing fields (LLM or rule-based)
             topic = filled_schema.get("topic", article.title)
-            queries = self._get_search_queries(job, topic, article, missing_fields)
+            queries = self._get_search_queries(job, topic, article, missing_fields, article.language)
 
             # Execute searches
             extra_results = []
             seen_urls = {s["url"] for s in filled_schema.get("sources_master", [])}
             for q in queries[:5]:
-                for r in self.search_service.search(q, limit=3):
+                for r in self.search_service.search(q, limit=3, language=article.language):
                     if r.url not in seen_urls:
                         seen_urls.add(r.url)
                         extra_results.append(r)
@@ -163,6 +163,7 @@ class ResearchOrchestrator:
         topic: str,
         article: Any,
         missing_fields: list,
+        language: str = "en",
     ) -> list:
         """Generate search queries: use LLM if available, else rule-based fallback."""
         if not _USE_STUB:
@@ -174,6 +175,7 @@ class ResearchOrchestrator:
                     article_title=article.title,
                     missing_fields=missing_fields[:6],
                     limit_per_field=2,
+                    article_language=language,
                 )
                 if queries:
                     return queries
@@ -183,6 +185,85 @@ class ResearchOrchestrator:
         # Fallback: rule-based queries per missing field
         queries = []
         for field_path in missing_fields[:5]:
-            results = self.search_service._generate_queries(field_path, topic, job.category, article.title)
+            results = self.search_service._generate_queries(field_path, topic, job.category, article.title, language)
             queries.extend(results[:2])
         return queries
+
+    def process_additional(self, job: ResearchJob) -> ResearchJob:
+        """Process additional research on top of an existing filled schema."""
+        job.status = "processing"
+        job.started_at = _now_iso()
+        self.repo.update(job)
+
+        try:
+            job = self._run_additional(job)
+        except Exception as e:
+            job.status = "failed"
+            job.error_code = "SYS_001"
+            job.error_message = str(e)
+            job.finished_at = _now_iso()
+            self.repo.update(job)
+            return job
+
+        return job
+
+    def _run_additional(self, job: ResearchJob) -> ResearchJob:
+        options = job.options
+        additional_query: str = options.get("additional_query", "")
+        filled_schema: dict = job.target_schema or {}
+
+        # Detect article language from S1 in sources_master
+        sources_master = filled_schema.get("sources_master", [])
+        article_language = sources_master[0].get("language", "en") if sources_master else "en"
+        topic = filled_schema.get("topic", "")
+
+        # Generate search queries from natural language request
+        queries: list = []
+        if not _USE_STUB:
+            try:
+                from app.services.llm_extractor import generate_additional_queries
+                queries = generate_additional_queries(
+                    filled_schema=filled_schema,
+                    additional_query=additional_query,
+                    article_language=article_language,
+                )
+            except Exception:
+                pass
+
+        if not queries:
+            # Fallback: use the raw query as a search string with topic as anchor
+            queries = [f"{topic} {additional_query}"]
+
+        # Execute searches
+        extra_results = []
+        seen_urls = {s["url"] for s in sources_master}
+        for q in queries[:8]:
+            for r in self.search_service.search(q, limit=3, language=article_language):
+                if r.url not in seen_urls:
+                    seen_urls.add(r.url)
+                    extra_results.append(r)
+
+        # Merge new sources into existing schema
+        if extra_results and not _USE_STUB:
+            from app.services.llm_extractor import merge_sources
+            filled_schema = merge_sources(
+                category=job.category,
+                current_schema=filled_schema,
+                new_results=extra_results,
+                missing_fields=[additional_query],
+            )
+
+        validate_source_references(filled_schema)
+
+        completion_rate, missing_fields, _ = calculate_completion_rate(job.category, filled_schema)
+        final_status = determine_status(completion_rate, job.category)
+
+        job.filled_schema = filled_schema
+        job.completion_rate = completion_rate
+        job.missing_fields = missing_fields
+        job.sources_used = len(filled_schema.get("sources_master", []))
+        job.iterations_count = 1
+        job.status = final_status
+        job.finished_at = _now_iso()
+        self.repo.update(job)
+        return job

@@ -7,7 +7,9 @@
 * 입력: `article_url`, `category`
 * 처리: 기사 파싱 → 1차 추출 → 누락 필드 탐지 → 재검색/보강 반복
 * 출력: 카테고리별 최종 조사 JSON + 메타데이터
-* 저장: 요청, 출처, 필드 상태, 반복 로그, 결과 저장  
+* 저장: 요청, 출처, 필드 상태, 반복 로그, 결과 저장
+
+**추가 리서치 기능**: 완료된 조사 결과에 자연어 요청으로 특정 정보를 추가 검색·보강할 수 있다.
 
 ---
 
@@ -78,7 +80,74 @@
 }
 ```
 
-## 3.3 조회
+## 3.3 추가 리서치 요청
+
+### `POST /v1/research/additional`
+
+완료된 조사 결과에 자연어 요청으로 특정 정보를 추가 검색·보강한다.
+동일한 비동기 패턴을 사용 — 새 `request_id`를 반환하고 GET으로 폴링.
+
+**방식 1: request_id로 참조 (같은 서버 세션 내)**
+
+```json
+{
+  "request_id": "req_a1b2c3d4e5f6",
+  "additional_query": "이 제품의 가격 정보와 경쟁사 비교가 필요해",
+  "options": {
+    "max_iterations": 3,
+    "min_completion_rate": 0.85,
+    "locale": "ko-KR",
+    "search_limit_per_iteration": 5
+  }
+}
+```
+
+> `options`는 생략 가능. `request_id`는 인메모리 저장이므로 서버 재시작 시 무효화됨.
+
+**방식 2: filled_schema JSON 직접 전달 (서버 재시작 후에도 사용 가능)**
+
+```json
+{
+  "article_url": "https://example.com/article",
+  "category": "상품·서비스",
+  "additional_query": "북미 시장 진출 현황과 파트너사 정보 추가해줘",
+  "filled_schema": {
+    "category": "상품·서비스",
+    "topic": "AI 식품 트렌드 분석 서비스",
+    "researched_at": "2026-03-25",
+    "sources_master": [
+      {
+        "source_id": "S1",
+        "url": "https://example.com/article",
+        "title": "기사 제목",
+        "publisher": "example.com",
+        "published_at": "2026-03-20",
+        "source_type": "article",
+        "language": "en",
+        "relevance_score": 1.0,
+        "is_duplicate": false
+      }
+    ],
+    "name": { "value": "FOODIAL AI", "sources": ["S1"], "notes": "" }
+  }
+}
+```
+
+> `filled_schema`는 `GET /v1/research/{request_id}` 응답의 `result.filled_schema` 값을 그대로 사용.
+> `sources_master[0].language`로 검색 언어를 자동 감지한다.
+
+**응답**
+
+```json
+{
+  "request_id": "req_xyz789",
+  "status": "queued"
+}
+```
+
+---
+
+## 3.4 조회
 
 ### `GET /v1/research/{request_id}`
 
@@ -394,29 +463,49 @@ other
 
 ## 8.4 필드별 추천 검색어 패턴
 
+검색 언어는 원문 기사 언어(`sources_master[0].language`)를 기준으로 자동 선택된다.
+DuckDuckGo 리전도 언어에 맞게 설정: `en→wt-wt`, `ja→jp-jp`, `ko→kr-kr`, `zh→zh-cn`.
+
 ### 해외 동향
 
-* `"[기사 제목]" similar article`
-* `"[trend_name]" definition`
+**영어 기사 기준**
+* `"[article title]" definition`
 * `"[trend_name]" market trend`
 * `"[trend_name]" examples brands`
 * `"[trend_name]" expansion global industry`
 
+**일본어 기사 기준**
+* `"[기사 제목]" トレンド 定義`
+* `"[trend_name]" 事例 ブランド`
+* `"[trend_name]" グローバル展開 地域`
+
 ### 상품·서비스
 
+**영어 기사 기준**
 * `"[product name]" official site`
-* `"[product name]" pricing`
-* `"[product name]" features`
+* `"[product name]" pricing plans`
+* `"[product name]" features capabilities`
 * `"[developer name]" company`
 * `"[product name]" how it works`
 
+**일본어 기사 기준**
+* `"[제품명]" 価格 料金`
+* `"[제품명]" 特徴 機能`
+* `"[제품명]" 仕組み 方法`
+
 ### 푸드테크
 
-* `"[technology name]" principle`
+**영어 기사 기준**
+* `"[technology name]" principle mechanism`
 * `"[technology name]" applications food`
-* `"[technology name]" company case`
+* `"[technology name]" company case study`
 * `"[technology name]" results efficiency`
 * `"[technology name]" industry implications`
+
+**일본어 기사 기준**
+* `"[기술명]" 技術 原理 仕組み`
+* `"[기술명]" 応用 活用 企業`
+* `"[기술명]" 効果 結果 実績`
 
 ## 8.5 필드-검색어 매핑 예시
 

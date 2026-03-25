@@ -18,7 +18,7 @@ HEADERS = {
         "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/120.0.0.0 Safari/537.36"
     ),
-    "Accept-Language": "ja,ko;q=0.9,en;q=0.8",
+    "Accept-Language": "en,*;q=0.5",
 }
 
 

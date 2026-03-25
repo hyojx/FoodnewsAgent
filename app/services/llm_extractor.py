@@ -258,11 +258,13 @@ Update the schema with evidence from the new sources. Return the complete update
 
 # ─── Prompt C: Search query generation ───────────────────────────────────────
 
+_LANG_NAMES = {"ja": "Japanese", "ko": "Korean", "en": "English", "zh": "Chinese"}
+
 SYSTEM_QUERY_GEN = """You are a research query generator for a food industry research service.
 
 Generate targeted web search queries to fill missing fields in a research schema.
-Use Japanese or English queries for better search coverage on Japanese topics.
-Return ONLY a JSON array of query strings — no explanation."""
+Use the article's language for better search coverage.
+Return ONLY a JSON object: {"queries": [...]}"""
 
 def generate_search_queries(
     category: str,
@@ -270,27 +272,29 @@ def generate_search_queries(
     article_title: str,
     missing_fields: List[str],
     limit_per_field: int = 2,
+    article_language: str = "en",
 ) -> List[str]:
     """Prompt C: Generate search queries for missing fields."""
     client = get_client()
+    lang_name = _LANG_NAMES.get(article_language, "English")
 
     prompt = f"""Category: {category}
 Topic: {topic}
 Article title: {article_title}
+Article language: {lang_name}
 Missing fields: {json.dumps(missing_fields[:8], ensure_ascii=False)}
 
 Generate up to {limit_per_field} targeted search queries per missing field.
 IMPORTANT: Each query MUST include the article title or topic keyword as anchor — do NOT generate generic queries without it.
-For example, if article title is "FOODIAL AI", queries must contain "FOODIAL AI" (not just "AI 食品 検索").
-Focus on factual, specific queries. Use Japanese for Japanese topics.
-Return a flat JSON array of query strings."""
+Use {lang_name} for the queries (match the article's language).
+Return: {{"queries": [...]}}"""
 
     response = client.chat.completions.create(
         model=MODEL,
         max_tokens=2000,
         response_format={"type": "json_object"},
         messages=[
-            {"role": "system", "content": SYSTEM_QUERY_GEN + "\nReturn: {\"queries\": [...]}"},
+            {"role": "system", "content": SYSTEM_QUERY_GEN},
             {"role": "user", "content": prompt},
         ],
     )
@@ -298,7 +302,66 @@ Return a flat JSON array of query strings."""
     text = response.choices[0].message.content or "{}"
     try:
         data = json.loads(text)
-        # Handle both {"queries": [...]} and plain [...]
+        if isinstance(data, list):
+            return [str(q) for q in data]
+        if isinstance(data, dict):
+            for key in ("queries", "search_queries", "results"):
+                if key in data and isinstance(data[key], list):
+                    return [str(q) for q in data[key]]
+    except Exception:
+        pass
+    return []
+
+
+# ─── Prompt E: Additional research query generation ───────────────────────────
+
+SYSTEM_ADDITIONAL_QUERY_GEN = """You are a research query generator for a food industry research service.
+
+A user has an existing research document and wants to find additional specific information.
+Their request is written in Korean. Generate targeted web search queries to find what they need.
+Return ONLY a JSON object: {"queries": [...]}"""
+
+
+def generate_additional_queries(
+    filled_schema: Dict,
+    additional_query: str,
+    article_language: str = "en",
+) -> List[str]:
+    """Generate search queries from a natural language additional research request."""
+    client = get_client()
+    lang_name = _LANG_NAMES.get(article_language, "English")
+
+    sources = filled_schema.get("sources_master", [])
+    original_source = sources[0] if sources else {}
+    topic = filled_schema.get("topic", "")
+    category = filled_schema.get("category", "")
+
+    prompt = f"""Existing research context:
+- Category: {category}
+- Topic: {topic}
+- Original article: {original_source.get("title", "")}
+
+User's additional research request (in Korean):
+{additional_query}
+
+Generate 4-6 targeted web search queries to find the requested information.
+Use {lang_name} for the queries (match the original article's language).
+Each query must be specific and include the topic/product name as anchor.
+Return: {{"queries": [...]}}"""
+
+    response = client.chat.completions.create(
+        model=MODEL,
+        max_tokens=1000,
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": SYSTEM_ADDITIONAL_QUERY_GEN},
+            {"role": "user", "content": prompt},
+        ],
+    )
+
+    text = response.choices[0].message.content or "{}"
+    try:
+        data = json.loads(text)
         if isinstance(data, list):
             return [str(q) for q in data]
         if isinstance(data, dict):
