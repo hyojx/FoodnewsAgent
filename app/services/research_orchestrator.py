@@ -9,9 +9,11 @@ Coordinates the full research loop:
   6. Merge new sources into schema (LLM) (iterations 2..N)
   7. Validate and return result
 """
+import logging
 import os
+import re
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from app.config import FIELD_RULES
 from app.repositories.research_repo import ResearchJob, get_repo
@@ -28,6 +30,37 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+# Generic Korean words that do NOT indicate topic relevance
+_GENERIC_KO = frozenset({
+    "신상품", "제품", "브랜드", "기업", "사례", "정의", "트렌드", "이란", "특징",
+    "배경", "역사", "가격", "요금", "업계", "의의", "영향", "방법", "작동",
+    "기능", "원리", "기술", "활용", "응용", "결과", "효과", "실적",
+})
+
+
+def _filter_by_relevance(results: list, article_title: str, topic: str) -> list:
+    """Keep results that share at least one meaningful keyword with the article/topic.
+
+    Falls back to the full list if filtering removes everything.
+    """
+    combined_text = f"{article_title} {topic}"
+    # Extract Korean words (2+ chars) and ASCII words (3+ chars)
+    ko_words = set(re.findall(r'[가-힣]{2,}', combined_text))
+    en_words = set(w.lower() for w in re.findall(r'[a-zA-Z]{3,}', combined_text))
+    keywords = (ko_words | en_words) - _GENERIC_KO
+
+    if not keywords:
+        return results
+
+    filtered = []
+    for r in results:
+        haystack = f"{r.title} {r.snippet} {r.full_content[:300]}".lower()
+        if any(kw.lower() in haystack for kw in keywords):
+            filtered.append(r)
+
+    return filtered if filtered else results
+
+
 class ResearchOrchestrator:
     def __init__(
         self,
@@ -42,6 +75,7 @@ class ResearchOrchestrator:
         job.status = "processing"
         job.started_at = _now_iso()
         self.repo.update(job)
+        logging.info("[JOB %s] status=processing category=%s", job.request_id, job.category)
 
         try:
             job = self._run(job)
@@ -51,6 +85,7 @@ class ResearchOrchestrator:
             job.error_message = e.message
             job.finished_at = _now_iso()
             self.repo.update(job)
+            logging.error("[JOB %s] status=failed error=%s %s", job.request_id, e.code, e.message)
             return job
         except Exception as e:
             job.status = "failed"
@@ -58,8 +93,14 @@ class ResearchOrchestrator:
             job.error_message = str(e)
             job.finished_at = _now_iso()
             self.repo.update(job)
+            logging.error("[JOB %s] status=failed error=SYS_001 %s", job.request_id, str(e))
             return job
 
+        logging.info(
+            "[JOB %s] status=%s completion_rate=%.2f iterations=%d missing=%s",
+            job.request_id, job.status, job.completion_rate or 0.0,
+            job.iterations_count, job.missing_fields or [],
+        )
         return job
 
     def _run(self, job: ResearchJob) -> ResearchJob:
@@ -109,6 +150,9 @@ class ResearchOrchestrator:
                     if r.url not in seen_urls:
                         seen_urls.add(r.url)
                         extra_results.append(r)
+
+            # Drop results unrelated to the article topic
+            extra_results = _filter_by_relevance(extra_results, article.title, topic)
 
             if not extra_results:
                 stagnant_iterations += 1
@@ -194,6 +238,7 @@ class ResearchOrchestrator:
         job.status = "processing"
         job.started_at = _now_iso()
         self.repo.update(job)
+        logging.info("[JOB %s] status=processing (additional) category=%s", job.request_id, job.category)
 
         try:
             job = self._run_additional(job)
@@ -203,8 +248,13 @@ class ResearchOrchestrator:
             job.error_message = str(e)
             job.finished_at = _now_iso()
             self.repo.update(job)
+            logging.error("[JOB %s] status=failed (additional) error=SYS_001 %s", job.request_id, str(e))
             return job
 
+        logging.info(
+            "[JOB %s] status=%s (additional) completion_rate=%.2f",
+            job.request_id, job.status, job.completion_rate or 0.0,
+        )
         return job
 
     def _run_additional(self, job: ResearchJob) -> ResearchJob:
@@ -242,6 +292,10 @@ class ResearchOrchestrator:
                 if r.url not in seen_urls:
                     seen_urls.add(r.url)
                     extra_results.append(r)
+
+        # Drop results unrelated to the topic
+        original_title = sources_master[0].get("title", "") if sources_master else ""
+        extra_results = _filter_by_relevance(extra_results, original_title, topic)
 
         # Merge new sources into existing schema
         if extra_results and not _USE_STUB:

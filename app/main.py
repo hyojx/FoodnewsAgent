@@ -1,6 +1,10 @@
-from fastapi import FastAPI
+import time
+import logging
+from fastapi import FastAPI, Request
 from app.routers import health, research, schemas, categories
 from app.blog.api.router import router as blog_router
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 app = FastAPI(
     title="IRA API — Iterative Research Agent",
@@ -30,6 +34,21 @@ app = FastAPI(
 """,
     version="1.1.0",
 )
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.time()
+    response = await call_next(request)
+    duration_ms = int((time.time() - start) * 1000)
+    logging.info(
+        "%s %s → %s (%dms)",
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration_ms,
+    )
+    return response
+
 
 app.include_router(health.router)
 app.include_router(research.router)
