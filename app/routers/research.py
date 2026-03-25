@@ -1,5 +1,4 @@
 import uuid
-import logging
 import threading
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from typing import Any, Dict, Optional
