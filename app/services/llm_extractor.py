@@ -317,8 +317,14 @@ Return: {{"queries": [...]}}"""
 
 SYSTEM_ADDITIONAL_QUERY_GEN = """You are a research query generator for a food industry research service.
 
-A user has an existing research document and wants to find additional specific information.
+A user has an existing food industry research document and wants to find additional specific information.
 Their request is written in Korean. Generate targeted web search queries to find what they need.
+
+CRITICAL RULES:
+- EVERY query MUST include the exact topic/product/company name from the research context as an anchor
+- NEVER generate a query that omits the topic anchor — it will return completely unrelated results
+- Be specific: combine the topic name with terms directly relevant to the user's request
+- Do NOT generate broad or generic queries
 Return ONLY a JSON object: {"queries": [...]}"""
 
 
@@ -335,18 +341,20 @@ def generate_additional_queries(
     original_source = sources[0] if sources else {}
     topic = filled_schema.get("topic", "")
     category = filled_schema.get("category", "")
+    original_title = original_source.get("title", "")
 
     prompt = f"""Existing research context:
 - Category: {category}
 - Topic: {topic}
-- Original article: {original_source.get("title", "")}
+- Original article: {original_title}
 
 User's additional research request (in Korean):
 {additional_query}
 
 Generate 4-6 targeted web search queries to find the requested information.
 Use {lang_name} for the queries (match the original article's language).
-Each query must be specific and include the topic/product name as anchor.
+CRITICAL: Every single query MUST include "{topic}" or the key subject from "{original_title}" as an anchor.
+A query without this anchor will return completely unrelated results — never generate such queries.
 Return: {{"queries": [...]}}"""
 
     response = client.chat.completions.create(

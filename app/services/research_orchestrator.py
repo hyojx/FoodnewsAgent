@@ -101,11 +101,12 @@ class ResearchOrchestrator:
             topic = filled_schema.get("topic", article.title)
             queries = self._get_search_queries(job, topic, article, missing_fields, article.language)
 
-            # Execute searches
+            # Execute searches — anchor ensures results relate to the original article
             extra_results = []
             seen_urls = {s["url"] for s in filled_schema.get("sources_master", [])}
+            anchor = article.title or topic
             for q in queries[:5]:
-                for r in self.search_service.search(q, limit=3, language=article.language):
+                for r in self.search_service.search(q, limit=3, language=article.language, anchor=anchor):
                     if r.url not in seen_urls:
                         seen_urls.add(r.url)
                         extra_results.append(r)
@@ -234,11 +235,23 @@ class ResearchOrchestrator:
             # Fallback: use the raw query as a search string with topic as anchor
             queries = [f"{topic} {additional_query}"]
 
-        # Execute searches
+        # Enforce topic anchor in every query — prevents generic/unrelated searches
+        if topic:
+            topic_lower = topic.lower()
+            anchored = []
+            for q in queries:
+                if topic_lower not in q.lower():
+                    anchored.append(f"{topic} {q}")
+                else:
+                    anchored.append(q)
+            queries = anchored
+
+        # Execute searches — anchor filters out irrelevant DuckDuckGo results
         extra_results = []
         seen_urls = {s["url"] for s in sources_master}
+        anchor = sources_master[0].get("title", topic) if sources_master else topic
         for q in queries[:8]:
-            for r in self.search_service.search(q, limit=3, language=article_language):
+            for r in self.search_service.search(q, limit=3, language=article_language, anchor=anchor):
                 if r.url not in seen_urls:
                     seen_urls.add(r.url)
                     extra_results.append(r)

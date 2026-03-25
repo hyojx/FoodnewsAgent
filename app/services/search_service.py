@@ -3,6 +3,7 @@
 Uses DuckDuckGo (no API key required) to search the web.
 Fetches snippet content from top results using requests + trafilatura.
 """
+import re
 from dataclasses import dataclass, field
 from typing import List, Optional
 from urllib.parse import urlparse
@@ -20,6 +21,29 @@ HEADERS = {
     ),
     "Accept-Language": "en,*;q=0.5",
 }
+
+# Domains that must never appear in food research results
+_BLOCKED_DOMAINS: frozenset = frozenset({
+    # Adult content
+    "xvideos.com", "crot.media", "xnxx.com", "pornhub.com", "xhamster.com",
+    "bokeptv.com",
+    # App stores (not article content)
+    "play.google.com", "apps.apple.com", "apps.microsoft.com",
+    # Microsoft services (unrelated to food)
+    "microsoft.com", "office.com", "account.microsoft.com", "support.microsoft.com",
+    # Social media app pages
+    "instagram.com", "facebook.com", "twitter.com", "tiktok.com",
+    # Chinese video/entertainment
+    "bilibili.com", "douban.com", "movie.douban.com", "baike.baidu.com",
+    # Q&A / forum sites (low quality for research)
+    "zhidao.baidu.com", "answers.yahoo.com", "quora.com",
+    # Government / national park / non-food sites
+    "nps.gov",
+    # GIS / mapping services
+    "tim-online.nrw.de", "openstreetmap.org", "maps.google.com",
+    # Other clearly unrelated
+    "absolutradio.de", "steam.work",
+})
 
 # DuckDuckGo region codes per language
 LANGUAGE_TO_REGION = {
@@ -98,9 +122,44 @@ class SearchResult:
     relevance_score: float = 0.8
 
 
+def _is_blocked_domain(url: str) -> bool:
+    try:
+        netloc = urlparse(url).netloc.lower()
+        if netloc.startswith("www."):
+            netloc = netloc[4:]
+        return any(netloc == d or netloc.endswith("." + d) for d in _BLOCKED_DOMAINS)
+    except Exception:
+        return False
+
+
+def _is_relevant(title: str, snippet: str, anchor: str) -> bool:
+    """Check if a search result is relevant to the anchor keyword.
+
+    Splits the anchor into significant tokens and checks if any appear in
+    the result's title or snippet. Returns True when anchor is empty (no filter).
+    """
+    if not anchor:
+        return True
+    text = (title + " " + snippet).lower()
+    anchor_lower = anchor.lower()
+
+    # Whole-anchor match first (works well for short product/company names)
+    if anchor_lower in text:
+        return True
+
+    # Split by whitespace and common CJK/punctuation separators
+    parts = re.split(r'[\s、。・,\[\]「」『』()（）/\-_]+', anchor)
+    keywords = [p.strip().lower() for p in parts if len(p.strip()) >= 3]
+
+    if not keywords:
+        return True  # Cannot determine relevance — allow through
+
+    return any(kw in text for kw in keywords)
+
+
 class SearchService:
-    def search(self, query: str, limit: int = 5, language: str = "en") -> List[SearchResult]:
-        return self._execute_search(query, limit, language)
+    def search(self, query: str, limit: int = 5, language: str = "en", anchor: str = "") -> List[SearchResult]:
+        return self._execute_search(query, limit, language, anchor=anchor)
 
     def search_for_field(
         self,
@@ -111,11 +170,12 @@ class SearchService:
         limit: int = 3,
         language: str = "en",
     ) -> List[SearchResult]:
+        anchor = article_title.strip() if article_title.strip() else topic
         queries = self._generate_queries(field_path, topic, category, article_title, language)
         results = []
         seen_urls = set()
         for q in queries[:2]:
-            for r in self._execute_search(q, limit, language):
+            for r in self._execute_search(q, limit, language, anchor=anchor):
                 if r.url not in seen_urls:
                     seen_urls.add(r.url)
                     results.append(r)
@@ -136,27 +196,33 @@ class SearchService:
         raw = templates.get(base, [f"{anchor} {field_path.replace('.', ' ')}"])
         return [t.format(anchor=anchor) for t in raw]
 
-    def _execute_search(self, query: str, limit: int, language: str = "en") -> List[SearchResult]:
+    def _execute_search(self, query: str, limit: int, language: str = "en", anchor: str = "") -> List[SearchResult]:
         region = LANGUAGE_TO_REGION.get(language, "wt-wt")
         results = []
         try:
             with DDGS() as ddgs:
-                raw = list(ddgs.text(query, max_results=limit, region=region))
+                raw = list(ddgs.text(query, max_results=limit * 3, region=region))
         except Exception:
             try:
                 with DDGS() as ddgs:
-                    raw = list(ddgs.text(query, max_results=limit))
+                    raw = list(ddgs.text(query, max_results=limit * 3))
             except Exception:
                 return []
 
-        for i, item in enumerate(raw[:limit]):
+        for i, item in enumerate(raw):
+            if len(results) >= limit:
+                break
             url = item.get("href", "")
-            if not url:
+            if not url or _is_blocked_domain(url):
                 continue
             title = item.get("title", "")
             snippet = item.get("body", "")
-            publisher = urlparse(url).netloc
 
+            # Relevance pre-filter: skip if title+snippet have no keyword overlap with anchor
+            if anchor and not _is_relevant(title, snippet, anchor):
+                continue
+
+            publisher = urlparse(url).netloc
             full_content = self._fetch_content(url)
 
             results.append(

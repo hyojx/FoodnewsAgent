@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, HttpUrl, Field, field_validator, model_validator
 
-from app.config import SUPPORTED_CATEGORIES
+from app.config import SUPPORTED_CATEGORIES, normalize_category
 
 
 class ResearchOptions(BaseModel):
@@ -34,9 +34,10 @@ class ResearchCreateRequest(BaseModel):
     @field_validator("category")
     @classmethod
     def validate_category(cls, v: str) -> str:
-        if v not in SUPPORTED_CATEGORIES:
+        canonical = normalize_category(v)
+        if canonical is None:
             raise ValueError(f"Unsupported category '{v}'. Supported: {SUPPORTED_CATEGORIES}")
-        return v
+        return canonical
 
     @field_validator("article_url")
     @classmethod
@@ -76,8 +77,10 @@ class AdditionalResearchRequest(BaseModel):
                 raise ValueError("article_url must start with http:// or https://")
             if not self.category:
                 raise ValueError("'category' is required when providing 'filled_schema'")
-            if self.category not in SUPPORTED_CATEGORIES:
+            canonical = normalize_category(self.category)
+            if canonical is None:
                 raise ValueError(f"Unsupported category '{self.category}'. Supported: {SUPPORTED_CATEGORIES}")
+            self.category = canonical
         if not self.additional_query.strip():
             raise ValueError("'additional_query' must not be empty")
         return self
