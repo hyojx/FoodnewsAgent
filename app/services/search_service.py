@@ -35,7 +35,6 @@ _BLOCKED_DOMAINS: frozenset = frozenset({
     "absolutradio.de", "steam.work",
 })
 
-TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
 
 # Query templates per language × field_path
 # Fallback for unknown field_path uses category as context (see _generate_queries).
@@ -162,7 +161,10 @@ def _is_relevant(title: str, snippet: str, anchor: str) -> bool:
 
 class SearchService:
     def __init__(self):
-        self._client = TavilyClient(api_key=TAVILY_API_KEY)
+        api_key = os.environ.get("TAVILY_API_KEY")
+        if not api_key:
+            raise RuntimeError("TAVILY_API_KEY is not set")
+        self._client = TavilyClient(api_key=api_key)
 
     def search(self, query: str, limit: int = 5, language: str = "en", anchor: str = "") -> List[SearchResult]:
         return self._execute_search(query, limit, language, anchor=anchor)
