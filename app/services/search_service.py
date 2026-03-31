@@ -1,26 +1,16 @@
 """Search service.
 
-Uses DuckDuckGo (no API key required) to search the web.
-Fetches snippet content from top results using requests + trafilatura.
+Uses Tavily Search API to search the web.
+Full page content is returned directly by Tavily (include_raw_content=True),
+so no separate fetch step is needed.
 """
+import os
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Optional
 from urllib.parse import urlparse
 
-import requests
-import trafilatura
-from duckduckgo_search import DDGS
-
-FETCH_TIMEOUT = 15
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0.0.0 Safari/537.36"
-    ),
-    "Accept-Language": "en,*;q=0.5",
-}
+from tavily import TavilyClient
 
 # Domains that must never appear in food research results
 _BLOCKED_DOMAINS: frozenset = frozenset({
@@ -45,15 +35,10 @@ _BLOCKED_DOMAINS: frozenset = frozenset({
     "absolutradio.de", "steam.work",
 })
 
-# DuckDuckGo region codes per language
-LANGUAGE_TO_REGION = {
-    "ja": "jp-jp",
-    "ko": "kr-kr",
-    "zh": "zh-cn",
-    "en": "wt-wt",
-}
+TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
 
-# Query templates per language
+# Query templates per language × field_path
+# Fallback for unknown field_path uses category as context (see _generate_queries).
 _QUERY_TEMPLATES: dict = {
     "ja": {
         "cases": ["{anchor} 事例 ブランド", "{anchor} 企業 活用事例"],
@@ -106,6 +91,23 @@ _QUERY_TEMPLATES: dict = {
         "results_and_effects": ["{anchor} 효과 결과 실적"],
         "industry_meaning": ["{anchor} 업계 의의 영향"],
     },
+    "zh": {
+        "cases": ["{anchor} 案例 品牌", "{anchor} 企业 应用案例"],
+        "trend_name": ["{anchor} 趋势 定义"],
+        "definition": ["{anchor} 是什么 含义 定义"],
+        "change_from_previous": ["{anchor} 变化 与以往比较"],
+        "background": ["{anchor} 背景 历史"],
+        "expansion_pattern.geographic_scope": ["{anchor} 全球扩展 地区"],
+        "expansion_pattern.industry_expansion": ["{anchor} 行业 扩展"],
+        "key_features": ["{anchor} 特点 功能"],
+        "how_it_works": ["{anchor} 工作原理 方法"],
+        "business_model.pricing": ["{anchor} 价格 收费"],
+        "business_model.model": ["{anchor} 商业模式 收益"],
+        "technology_principle": ["{anchor} 技术 原理 机制"],
+        "applications": ["{anchor} 应用 企业 用途"],
+        "results_and_effects": ["{anchor} 效果 结果 成效"],
+        "industry_meaning": ["{anchor} 行业 意义 影响"],
+    },
 }
 
 
@@ -137,6 +139,7 @@ def _is_relevant(title: str, snippet: str, anchor: str) -> bool:
 
     Splits the anchor into significant tokens and checks if any appear in
     the result's title or snippet. Returns True when anchor is empty (no filter).
+    Min token length is 2 to capture short but meaningful CJK/abbreviation terms.
     """
     if not anchor:
         return True
@@ -149,7 +152,7 @@ def _is_relevant(title: str, snippet: str, anchor: str) -> bool:
 
     # Split by whitespace and common CJK/punctuation separators
     parts = re.split(r'[\s、。・,\[\]「」『』()（）/\-_]+', anchor)
-    keywords = [p.strip().lower() for p in parts if len(p.strip()) >= 3]
+    keywords = [p.strip().lower() for p in parts if len(p.strip()) >= 2]
 
     if not keywords:
         return True  # Cannot determine relevance — allow through
@@ -158,28 +161,11 @@ def _is_relevant(title: str, snippet: str, anchor: str) -> bool:
 
 
 class SearchService:
+    def __init__(self):
+        self._client = TavilyClient(api_key=TAVILY_API_KEY)
+
     def search(self, query: str, limit: int = 5, language: str = "en", anchor: str = "") -> List[SearchResult]:
         return self._execute_search(query, limit, language, anchor=anchor)
-
-    def search_for_field(
-        self,
-        field_path: str,
-        topic: str,
-        category: str,
-        article_title: str = "",
-        limit: int = 3,
-        language: str = "en",
-    ) -> List[SearchResult]:
-        anchor = article_title.strip() if article_title.strip() else topic
-        queries = self._generate_queries(field_path, topic, category, article_title, language)
-        results = []
-        seen_urls = set()
-        for q in queries[:2]:
-            for r in self._execute_search(q, limit, language, anchor=anchor):
-                if r.url not in seen_urls:
-                    seen_urls.add(r.url)
-                    results.append(r)
-        return results[:limit]
 
     def _generate_queries(
         self,
@@ -192,38 +178,43 @@ class SearchService:
         anchor = article_title.strip() if article_title.strip() else topic
         lang_key = language if language in _QUERY_TEMPLATES else "en"
         templates = _QUERY_TEMPLATES[lang_key]
+        # Strip array notation (e.g. "cases[0]" → "cases")
         base = field_path.split("[")[0]
-        raw = templates.get(base, [f"{anchor} {field_path.replace('.', ' ')}"])
+        if base in templates:
+            raw = templates[base]
+        else:
+            # Fallback: include category as context so queries aren't generic
+            raw = [f"{anchor} {category} {field_path.replace('.', ' ')}"]
         return [t.format(anchor=anchor) for t in raw]
 
     def _execute_search(self, query: str, limit: int, language: str = "en", anchor: str = "") -> List[SearchResult]:
-        region = LANGUAGE_TO_REGION.get(language, "wt-wt")
-        results = []
         try:
-            with DDGS() as ddgs:
-                raw = list(ddgs.text(query, max_results=limit * 3, region=region))
+            response = self._client.search(
+                query=query,
+                max_results=min(limit * 2, 10),
+                include_raw_content=True,
+            )
+            raw = response.get("results", [])
         except Exception:
-            try:
-                with DDGS() as ddgs:
-                    raw = list(ddgs.text(query, max_results=limit * 3))
-            except Exception:
-                return []
+            return []
 
+        results = []
         for i, item in enumerate(raw):
             if len(results) >= limit:
                 break
-            url = item.get("href", "")
+
+            url = item.get("url", "")
             if not url or _is_blocked_domain(url):
                 continue
-            title = item.get("title", "")
-            snippet = item.get("body", "")
 
-            # Relevance pre-filter: skip if title+snippet have no keyword overlap with anchor
+            title = item.get("title", "")
+            snippet = item.get("content", "")
+
             if anchor and not _is_relevant(title, snippet, anchor):
                 continue
 
+            full_content = (item.get("raw_content") or "")[:3000]
             publisher = urlparse(url).netloc
-            full_content = self._fetch_content(url)
 
             results.append(
                 SearchResult(
@@ -235,19 +226,7 @@ class SearchService:
                     full_content=full_content,
                     source_type="article",
                     language=language,
-                    relevance_score=0.9 - (i * 0.05),
+                    relevance_score=item.get("score", 0.9 - (i * 0.05)),
                 )
             )
         return results
-
-    def _fetch_content(self, url: str, max_chars: int = 3000) -> str:
-        """Fetch and extract text from a URL. Returns empty string on failure."""
-        try:
-            resp = requests.get(url, headers=HEADERS, timeout=FETCH_TIMEOUT)
-            resp.raise_for_status()
-            extracted = trafilatura.extract(resp.text, no_fallback=False)
-            if extracted:
-                return extracted[:max_chars]
-        except Exception:
-            pass
-        return ""
